@@ -9,112 +9,109 @@ import (
 func main() {
 
 	var inputs []string = strings.Split(input, "\n")
-	var runeInputs [][]rune
+	var inputData [][]rune
+	var mask [][]int
 
-	// create runeInputs
+	// Create mask with values
 	for _, row := range inputs {
-		runeInputs = append(runeInputs, []rune(row))
+		var maskRow []int
+		for _, cell := range []rune(row) {
+			maskRow = append(maskRow, whatIsIt(cell))
+		}
+		mask = append(mask, maskRow)
+		inputData = append(inputData, []rune(row))
 	}
 
-	// search gear
+	// Create mask with number to consider (value = 2)
+	for i, row := range mask {
+		for k, cell := range row {
+			if cell == -1 {
+				mask[i][k] = 0
+				mask = changeFrom1To2(i, k, mask)
+			}
+		}
+	}
+
 	var res int = 0
-	for i, row := range runeInputs {
-		for k, _ := range row {
-			res += isItGear(runeInputs, i, k)
-		}
-	}
-
-	fmt.Println(res)
-}
-
-func isItGear(runeInputs [][]rune, i int, k int) int {
-	if runeInputs[i][k] != gear {
-		return 0
-	}
-	nNumGear := 0
-	for indRow := i - 1; indRow <= i+1; indRow++ {
-		lastNum := false
-		if indRow < 0 || indRow >= len(runeInputs) {
-			continue
-		}
-		for indCol := k - 1; indCol <= k+1; indCol++ {
-			if indCol < 0 || indCol >= len(runeInputs[indRow]) {
-				continue
-			}
-			if isItNumber(runeInputs[indRow][indCol]) {
-				if !lastNum {
-					nNumGear++
-				}
-				lastNum = true
-			} else {
-				lastNum = false
-			}
-		}
-	}
-
-	if nNumGear == 2 {
-		var res int = 1
-		// get numbers
-		for indRow := i - 1; indRow <= i+1; indRow++ {
-			lastNum := false
-			if indRow < 0 || indRow >= len(runeInputs) {
-				continue
-			}
-			for indCol := k - 1; indCol <= k+1; indCol++ {
-				if indCol < 0 || indCol >= len(runeInputs[indRow]) {
+	for i, row := range mask {
+		var numberStr string = ""
+		for k, cell := range row {
+			if cell == 2 {
+				numberStr += string(inputData[i][k])
+				mask = changeFrom1To2(i, k, mask)
+			} else if numberStr != "" {
+				numberInt, err := strconv.Atoi(numberStr)
+				if err != nil {
+					fmt.Errorf("ERROR ", err)
 					continue
 				}
-				if isItNumber(runeInputs[indRow][indCol]) {
-					if !lastNum {
-						res *= findNumber(runeInputs, indRow, indCol)
-					}
-					lastNum = true
-				} else {
-					lastNum = false
-				}
+				fmt.Println(numberInt)
+				res += numberInt
+				numberStr = ""
 			}
 		}
-		return res
+		if numberStr != "" {
+			numberInt, err := strconv.Atoi(numberStr)
+			if err != nil {
+				fmt.Errorf("ERROR ", err)
+				continue
+			}
+			fmt.Println(numberInt)
+			res += numberInt
+			numberStr = ""
+		}
 	}
-	return 0
-}
 
-func findNumber(inputs [][]rune, i int, k int) int {
-	numStr := ""
-	initInd := k
-	for isItNumber(inputs[i][initInd]) {
-		initInd--
-		if initInd < 0 {
-			break
-		}
-	}
-	initInd++
-	for isItNumber(inputs[i][initInd]) {
-		numStr += string(inputs[i][initInd])
-		initInd++
-		if initInd >= len(inputs[i]) {
-			break
-		}
-	}
-	res, err := strconv.Atoi(numStr)
-	if err != nil {
-		fmt.Errorf("ERRORE", err)
-	}
 	fmt.Println(res)
-	return res
 }
 
-func isItNumber(input rune) bool {
+func changeFrom1To2(i int, k int, mask [][]int) [][]int {
+	for _, rowInd := range [3]int{i - 1, i, i + 1} {
+		if rowInd < 0 || rowInd >= len(mask) {
+			continue
+		}
+		for _, colInd := range [3]int{k - 1, k, k + 1} {
+			if colInd < 0 || colInd >= len(mask[rowInd]) {
+				continue
+			}
+			if mask[rowInd][colInd] == 1 {
+				mask[rowInd][colInd] = 2
+				mask = changeFrom1To2Horizontal(rowInd, colInd, mask)
+			}
+		}
+	}
+	return mask
+}
+
+func changeFrom1To2Horizontal(i int, k int, mask [][]int) [][]int {
+
+	for _, colInd := range [3]int{k - 1, k, k + 1} {
+		if colInd < 0 || colInd >= len(mask[i]) {
+			continue
+		}
+		if mask[i][colInd] == 1 {
+			mask[i][colInd] = 2
+			mask = changeFrom1To2Horizontal(i, colInd, mask)
+		}
+	}
+	return mask
+}
+
+// 0 = point, 1 = number, -1 = symbol
+func whatIsIt(input rune) int {
+	if input == point {
+		return 0
+	}
 	for _, number := range numbers {
 		if number == input {
-			return true
+			return 1
 		}
 	}
-	return false
+	return -1
 }
 
 var numbers = [...]rune{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-var gear = '*'
+var point = '.'
 
 const input = `.242......276....234............682.......................958..695..742................714......574..............833.........159....297.686.
 .............*............................612*......304..*..........*.......@175...#...*...........*890...........*.............*..*........
@@ -257,4 +254,4 @@ const input = `.242......276....234............682.......................958..69
 ..........335..........562...258........*..........761.......758...*.....................602................................955........512..
 .........................................882........................730..........................566..............................202.......`
 
-const result = 84495585
+const result = 544664
