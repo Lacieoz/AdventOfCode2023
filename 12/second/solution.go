@@ -8,15 +8,12 @@ import (
 	"time"
 )
 
-// TODO DYNAMIC PROGRAMMING
-
 func main() {
 
 	startTime := time.Now()
 
 	var rows = strings.Split(inputs, "\n")
 	res := 0
-	index := 1
 
 	for _, row := range rows {
 		splitted := strings.Split(row, " ")
@@ -34,11 +31,8 @@ func main() {
 		}
 
 		text, dmgZones = unfolding(text, dmgZones)
-
-		res += findCombinations(text, dmgZones, 0, 0, 0, 0)
-
-		fmt.Println(index, " - ", res)
-		index++
+		dynProgMap := make(map[string]int)
+		res += findCombinations(text, dmgZones, 0, 0, 0, 0, dynProgMap)
 	}
 
 	elapsedTime := time.Since(startTime)
@@ -63,16 +57,23 @@ func unfolding(text string, zones []int) (string, []int) {
 	return resText, resZones
 }
 
-func findCombinations(text string, dmgSizesOrig []int, indText int, indDmgSize int, currSize int, res int) int {
+func findCombinations(text string, dmgSizesOrig []int, indText int, indDmgSize int, currSize int, res int, dynProgMap map[string]int) int {
 
 	if remainingBlock(dmgSizesOrig, indDmgSize)-currSize > (len(text) - indText) {
 		return res
+	}
+
+	var key string = strconv.Itoa(indText) + "_" + strconv.Itoa(indDmgSize) + "_" + strconv.Itoa(currSize) + "_" + text[indText:]
+	val, ok := dynProgMap[key]
+	if ok {
+		return res + val
 	}
 
 	for indText < len(text) && indDmgSize < len(dmgSizesOrig) && text[indText] != '?' {
 		if text[indText] == '.' {
 			if currSize != 0 {
 				if dmgSizesOrig[indDmgSize] != currSize {
+					dynProgMap[key] = 0
 					return res
 				} else {
 					indDmgSize++
@@ -81,14 +82,20 @@ func findCombinations(text string, dmgSizesOrig []int, indText int, indDmgSize i
 			}
 		} else if text[indText] == '#' {
 			currSize++
+			if currSize > dmgSizesOrig[indDmgSize] {
+				dynProgMap[key] = 0
+				return res
+			}
 		}
 		indText++
 	}
 
 	if indDmgSize == len(dmgSizesOrig) {
 		if strings.Contains(text[indText:], "#") {
+			dynProgMap[key] = 0
 			return res
 		} else {
+			dynProgMap[key] = 1
 			return res + 1
 		}
 	}
@@ -111,10 +118,11 @@ func findCombinations(text string, dmgSizesOrig []int, indText int, indDmgSize i
 
 	if text[indText] == '?' {
 		text1 := strings.Replace(text, "?", ".", 1)
-		res = findCombinations(text1, dmgSizesOrig, indText, indDmgSize, currSize, res)
+		res1 := findCombinations(text1, dmgSizesOrig, indText, indDmgSize, currSize, res, dynProgMap)
 		text2 := strings.Replace(text, "?", "#", 1)
-		res = findCombinations(text2, dmgSizesOrig, indText, indDmgSize, currSize, res)
-		return res
+		res2 := findCombinations(text2, dmgSizesOrig, indText, indDmgSize, currSize, res1, dynProgMap)
+		dynProgMap[key] = res2 - res
+		return res2
 	}
 
 	return res
@@ -1133,4 +1141,4 @@ const inputs = `.???#??.?##?#??? 1,1,7
 ?#?????.?.?#????##.? 1,2,1,1,2,4
 ???#?.?#?#.?#???#..? 4,4,5,1`
 
-const result = 0
+const result = 8414003326821
