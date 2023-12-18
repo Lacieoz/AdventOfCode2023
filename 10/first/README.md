@@ -78,19 +78,23 @@ LJ.LJ
 If you want to get out ahead of the animal, you should find the tile in the loop that is farthest from the starting position. Because the animal is in the pipe, it doesn't make sense to measure this by direct distance. Instead, you need to find the tile that would take the longest number of steps along the loop to reach from the starting point - regardless of which way around the loop the animal went.
 
 In the first example with the square loop:
-
+```
 .....
 .S-7.
 .|.|.
 .L-J.
 .....
+```
+
 You can count the distance each tile in the loop is from the starting point like this:
 
+```
 .....
 .012.
 .1.3.
 .234.
 .....
+```
 In this example, the farthest point from the start is 4 steps away.
 
 Here's the more complex loop again:
